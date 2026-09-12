@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SOM Solver — Strength of Materials AI</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+  .card { background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+  .answer-content h1,.answer-content h2,.answer-content h3 { font-weight: 700; margin: 1em 0 0.5em; }
+  .answer-content p { margin: 0.5em 0; line-height: 1.7; }
+  .answer-content ul,.answer-content ol { margin: 0.5em 0 0.5em 1.5em; }
+  .answer-content li { margin: 0.25em 0; }
+  .answer-content code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+  .answer-content pre { background: #1e293b; color: #e2e8f0; padding: 1em; border-radius: 8px; overflow-x: auto; margin: 1em 0; }
+  .answer-content strong { color: #4f46e5; }
+  .spinner { border: 4px solid #e5e7eb; border-top: 4px solid #6366f1; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen bg-slate-50">
+
+<!-- Header -->
+<header class="gradient-bg text-white py-6 px-4 shadow-lg">
+  <div class="max-w-5xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center text-2xl">⚙️</div>
+      <div>
+        <h1 class="text-xl font-bold">SOM Solver</h1>
+        <p class="text-xs text-white/80">Strength of Materials · AI Powered</p>
+      </div>
+    </div>
+    <a href="#about" class="text-sm text-white/90 hover:text-white">About</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="gradient-bg text-white pb-16 pt-6 px-4">
+  <div class="max-w-3xl mx-auto text-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold mb-3">Solve Any Strength of Materials Problem</h2>
+    <p class="text-white/90 mb-6">Numericals · Theory · Derivations · Step-by-step solutions</p>
+  </div>
+</section>
+
+<!-- Main -->
+<main class="max-w-4xl mx-auto px-4 -mt-10 pb-16">
+
+  <!-- API Key Input -->
+  <div class="card p-4 mb-4 flex flex-col md:flex-row gap-3 items-center">
+    <label class="text-sm font-medium text-slate-600 whitespace-nowrap">🔑 Gemini API Key:</label>
+    <input id="apiKey" type="password" placeholder="Paste your Google Gemini API key"
+      class="flex-1 w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"/>
+    <a href="https://aistudio.google.com/app/apikey" target="_blank"
+       class="text-xs text-indigo-600 hover:underline whitespace-nowrap">Get free key →</a>
+  </div>
+
+  <!-- Question Box -->
+  <div class="card p-6">
+    <label class="block text-sm font-semibold text-slate-700 mb-2">Enter your question:</label>
+    <textarea id="question" rows="5" placeholder="e.g. A steel rod of 20 mm diameter and 2 m length is subjected to an axial pull of 40 kN. Find the stress, strain and elongation. Take E = 200 GPa."
+      class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"></textarea>
+
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button onclick="setQ('A steel rod of 20 mm diameter and 2 m length is subjected to an axial pull of 40 kN. Find stress, strain and elongation. Take E = 200 GPa.')" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100">Axial stress</button>
+      <button onclick="setQ('Derive the bending equation M/I = σ/y = E/R for a beam.')" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100">Bending equation</button>
+      <button onclick="setQ('A simply supported beam of span 6 m carries a UDL of 10 kN/m. Draw SFD and BMD.')" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100">SFD/BMD</button>
+      <button onclick="setQ('Explain Mohr\'s circle of stress with a neat sketch.')" class="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100">Mohr's circle</button>
+    </div>
+
+    <button id="solveBtn" onclick="solve()"
+      class="w-full mt-5 gradient-bg text-white font-semibold py-3 rounded-xl hover:opacity-90 transition">
+      ✨ Solve Step-by-Step
+    </button>
+  </div>
+
+  <!-- Output -->
+  <div id="output" class="card p-6 mt-6 hidden">
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+      <h3 class="font-bold text-slate-800 text-lg">📘 Solution</h3>
+      <button onclick="copyAnswer()" class="text-xs text-slate-500 hover:text-indigo-600">📋 Copy</button>
+    </div>
+    <div id="answer" class="answer-content text-slate-700"></div>
+  </div>
+
+  <div id="loading" class="hidden flex-col items-center py-10">
+    <div class="spinner"></div>
+    <p class="mt-4 text-slate-500 text-sm">Analyzing your problem…</p>
+  </div>
+
+</main>
+
+<footer class="bg-slate-900 text-slate-400 text-center py-6 text-xs px-4">
+  <p>⚠️ AI-generated solutions are for learning. Verify critical results.</p>
+  <p class="mt-1">© 2025 SOM Solver</p>
+</footer>
+
+<script>
+const SYSTEM_PROMPT = `You are an expert Strength of Materials (Mechanics of Solids) professor. 
+If the user's question is NOT related to Strength of Materials, respond with: "❌ This question does not appear to be related to Strength of Materials. Please ask a SOM-related question (stress, strain, beams, torsion, columns, Mohr's circle, etc.)."
+
+If it IS related, structure your answer EXACTLY as:
+
+## 📋 Given Data
+- list all given values with units
+
+## 🎯 To Find
+- required quantity
+
+## 📐 Formula Used
+- relevant formulas
+
+## 🧮 Step-by-Step Solution
+1. Write each step clearly
+2. Substitute values
+3. Show intermediate calculations
+
+## ✅ Final Answer
+**Answer:** value with correct units
+
+## 💡 Concept Explanation
+Short 2-3 line explanation of the underlying concept.
+
+Use proper SI units (N, mm, MPa, kN·m, etc.). Be technically accurate. Use Markdown formatting.`;
+
+function setQ(t){ document.getElementById('question').value = t; }
+
+function copyAnswer(){
+  navigator.clipboard.writeText(document.getElementById('answer').innerText);
+  alert('Copied!');
+}
+
+async function solve(){
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const q = document.getElementById('question').value.trim();
+
+  if(!apiKey){ alert('Please enter your Gemini API key.'); return; }
+  if(!q){ alert('Please enter a question.'); return; }
+
+  document.getElementById('output').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('loading').classList.add('flex');
+  document.getElementById('solveBtn').disabled = true;
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: SYSTEM_PROMPT + "\n\nQuestion: " + q }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+      })
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error?.message || 'API error');
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No answer.';
+    document.getElementById('answer').innerHTML = marked.parse(text);
+    document.getElementById('output').classList.remove('hidden');
+  } catch(e){
+    document.getElementById('answer').innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+    document.getElementById('output').classList.remove('hidden');
+  } finally {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('loading').classList.remove('flex');
+    document.getElementById('solveBtn').disabled = false;
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</body>
+</html>
